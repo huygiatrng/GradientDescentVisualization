@@ -85,7 +85,7 @@ def compute_cost(x, y, w, b):
     cost = 0
 
     for i in range(m):
-        f_wb = w * x[i] + b
+        f_wb = w * x[i] * x[i] + b
         cost = cost + (f_wb - y[i]) ** 2
     total_cost = 1 / (2 * m) * cost
     return total_cost
@@ -97,8 +97,8 @@ def compute_gradient(x, y, w, b):
     dj_db = 0
 
     for i in range(m):
-        f_wb = w * x[i] + b
-        dj_dw_i = (f_wb - y[i]) * x[i]
+        f_wb = w * x[i] * x[i] + b
+        dj_dw_i = (f_wb - y[i]) * x[i] * x[i]
         dj_db_i = f_wb - y[i]
         dj_db += dj_db_i
         dj_dw += dj_dw_i
@@ -147,12 +147,11 @@ def algogradient_descent(x, y, w_in, b_in, alpha, num_iters, cost_function, grad
     return w, b, J_history, p_history
 
 
-def drawLine(w, b, color):
-    x1 = 0
-    y1 = x1 * w + b
-    x2 = 7.9
-    y2 = x2 * w + b
-    pygame.draw.line(screen, color, (x1 * 100 + 55, y1 * 100 + 55), (x2 * 100 + 55, y2 * 100 + 55), width=5)
+def drawParabol(w, b, color):
+    for i in np.arange(0, 7.9, 0.01):
+        x = i
+        y = i * i * w + b
+        pygame.draw.circle(screen, color, (x * 100 + 55, y * 100 + 55), 2)
 
 
 def drawPoints():
@@ -197,7 +196,7 @@ def calculateErrorNumber():
 running = True
 w_init = 0
 b_init = 0
-tmp_alpha = 5.0e-2
+tmp_alpha = 1.0e-3
 num_iters = 0
 w_final = w_init
 b_final = b_init
@@ -214,8 +213,8 @@ while running:
 
     # Draw graph
     drawPoints()
-    drawLine(w_init, b_init, RED)
-    drawLine(w_final, b_final, BLUE)
+    drawParabol(w_init, b_init, RED)
+    drawParabol(w_final, b_final, BLUE)
     # Check event if it is trying to quit
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -228,6 +227,7 @@ while running:
                                                                                          compute_cost, compute_gradient,
                                                                                          num_iters, J_history,
                                                                                          p_history)
+                    print(w_final, b_final)
                 except:
                     error1 = True
                 print("RUN pressed")
@@ -256,11 +256,6 @@ while running:
                 except:
                     error1 = True
                 print("Run x100000 pressed")
-
-            # pygame.draw.rect(screen, BLACK, (860, 260, 200, 50))
-            # pygame.draw.rect(screen, BLACK, (860, 330, 200, 50))
-            # pygame.draw.rect(screen, BLACK, (860, 400, 200, 50))
-
             if 55 < mouse_x < 845 and 55 < mouse_y < 545:
                 labels = []
                 point = [mouse_x - 55, mouse_y - 55]

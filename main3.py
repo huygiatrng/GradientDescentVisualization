@@ -80,79 +80,87 @@ def drawInterface():
         screen.blit(render_Ktext("(" + str(mouse_x - 55) + ", " + str(mouse_y - 55) + ")", 11), (mouse_x + 10, mouse_y))
 
 
-def compute_cost(x, y, w, b):
+def compute_cost(x, y, w, a, b):
     m = x.shape[0]
     cost = 0
-
     for i in range(m):
-        f_wb = w * x[i] + b
-        cost = cost + (f_wb - y[i]) ** 2
+        f_wab = (w * x[i] * x[i]) + (a * x[i]) + b
+        cost = cost + (f_wab - y[i]) ** 2
     total_cost = 1 / (2 * m) * cost
     return total_cost
 
 
-def compute_gradient(x, y, w, b):
+def compute_gradient(x, y, w, a, b):
     m = x.shape[0]
     dj_dw = 0
+    dj_da = 0
     dj_db = 0
 
     for i in range(m):
-        f_wb = w * x[i] + b
-        dj_dw_i = (f_wb - y[i]) * x[i]
-        dj_db_i = f_wb - y[i]
-        dj_db += dj_db_i
+        f_wab = (w * x[i] * x[i]) + (a * x[i]) + b
+
+        dj_dw_i = (f_wab - y[i]) * x[i] * x[i]
+        dj_da_i = (f_wab - y[i]) * x[i]
+        dj_db_i = f_wab - y[i]
+
         dj_dw += dj_dw_i
+        dj_da += dj_da_i
+        dj_db += dj_db_i
     dj_dw = dj_dw / m
+    dj_da = dj_da / m
     dj_db = dj_db / m
 
-    return dj_dw, dj_db
+    return dj_dw, dj_da, dj_db
 
 
-def gradient_descent(x, y, w_in, b_in, alpha, cost_function, gradient_function, i, J_history, p_history):
+def gradient_descent(x, y, w_in, a_in, b_in, alpha, cost_function, gradient_function, i, J_history, p_history):
     i += 1
     b = b_in
+    a = a_in
     w = w_in
-    dj_dw, dj_db = gradient_function(x, y, w, b)
+    dj_dw, dj_da, dj_db = gradient_function(x, y, w, a, b)
     b = b - alpha * 4 * dj_db
+    a = a - alpha * 2 * dj_da
     w = w - alpha * dj_dw
 
-    J_history.append(cost_function(x, y, w, b))
-    p_history.append([w, b])
+    J_history.append(cost_function(x, y, w, a, b))
+    p_history.append([w, a, b])
     print(f"Iteration {i:4}: Cost {J_history[-1]:0.2e} ",
-          f"dj_dw: {dj_dw: 0.3e}, dj_db: {dj_db: 0.3e}  ",
-          f"w: {w: 0.3e}, b:{b: 0.5e}")
+          f"dj_dw: {dj_dw: 0.3e}, dj_da: {dj_da: 0.3e}, dj_db: {dj_db: 0.3e}  ",
+          f"w: {w: 0.3e}, a:{a: 0.4e}, b:{b: 0.5e}")
 
-    return w, b, J_history, p_history, i  # return w and J,w history for graphing
+    return w, a, b, J_history, p_history, i  # return w and J,w history for graphing
 
 
-def algogradient_descent(x, y, w_in, b_in, alpha, num_iters, cost_function, gradient_function):
+def algogradient_descent(x, y, w_in, a_in, b_in, alpha, num_iters, cost_function, gradient_function):
     w = copy.deepcopy(w_in)
     J_history = []
     p_history = []
     b = b_in
+    a = a_in
     w = w_in
 
     for i in range(num_iters):
-        dj_dw, dj_db = gradient_function(x, y, w, b)
+        dj_dw, dj_da, dj_db = gradient_function(x, y, w, a, b)
         b = b - alpha * 4 * dj_db
+        a = a - alpha * 2 * dj_da
         w = w - alpha * dj_dw
         if i < 100000:
-            J_history.append(cost_function(x, y, w, b))
-            p_history.append([w, b])
+            J_history.append(cost_function(x, y, w, a, b))
+            p_history.append([w, a, b])
         if i % math.ceil(num_iters / 10) == 0:
             print(f"Iteration {i:4}: Cost {J_history[-1]:0.2e} ",
-                  f"dj_dw: {dj_dw: 0.3e}, dj_db: {dj_db: 0.3e}  ",
-                  f"w: {w: 0.3e}, b:{b: 0.5e}")
+                  f"dj_dw: {dj_dw: 0.3e}, dj_da: {dj_da: 0.3e}, dj_db: {dj_db: 0.3e}  ",
+                  f"w: {w: 0.3e}, a:{a: 0.4e}, b:{b: 0.5e}")
 
-    return w, b, J_history, p_history
+    return w, a, b, J_history, p_history
 
 
-def drawLine(w, b, color):
-    x1 = 0
-    y1 = x1 * w + b
-    x2 = 7.9
-    y2 = x2 * w + b
-    pygame.draw.line(screen, color, (x1 * 100 + 55, y1 * 100 + 55), (x2 * 100 + 55, y2 * 100 + 55), width=5)
+def drawParabol(w, a, b, color):
+    for i in np.arange(0, 7.9, 0.01):
+        x = i
+        y = (i * i * w) + (i * a) + b
+        pygame.draw.circle(screen, color, (x * 100 + 55, y * 100 + 55), 2)
 
 
 def drawPoints():
@@ -196,10 +204,12 @@ def calculateErrorNumber():
 # Config:
 running = True
 w_init = 0
+a_init = 0
 b_init = 0
-tmp_alpha = 5.0e-2
+tmp_alpha = 1.0e-3
 num_iters = 0
 w_final = w_init
+a_final = a_init
 b_final = b_init
 J_history = []
 p_history = []
@@ -214,8 +224,8 @@ while running:
 
     # Draw graph
     drawPoints()
-    drawLine(w_init, b_init, RED)
-    drawLine(w_final, b_final, BLUE)
+    drawParabol(w_init, a_init, b_init, RED)  # original graph
+    drawParabol(w_final, a_final, b_final, BLUE)
     # Check event if it is trying to quit
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -223,44 +233,46 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if 860 < mouse_x < 1010 and 190 < mouse_y < 240:
                 try:
-                    w_final, b_final, J_history, p_history, num_iters = gradient_descent(x_train, y_train, w_final,
-                                                                                         b_final, tmp_alpha,
-                                                                                         compute_cost, compute_gradient,
-                                                                                         num_iters, J_history,
-                                                                                         p_history)
+                    w_final, a_final, b_final, J_history, p_history, num_iters = gradient_descent(x_train, y_train,
+                                                                                                  w_final, a_final,
+                                                                                                  b_final, tmp_alpha,
+                                                                                                  compute_cost,
+                                                                                                  compute_gradient,
+                                                                                                  num_iters, J_history,
+                                                                                                  p_history)
                 except:
                     error1 = True
                 print("RUN pressed")
             if 860 < mouse_x < 1060 and 260 < mouse_y < 310:
                 try:
-                    w_final, b_final, J_history, p_history = algogradient_descent(x_train, y_train, w_init, b_init,
-                                                                                  tmp_alpha,
-                                                                                  5000, compute_cost, compute_gradient)
+                    w_final, a_final, b_final, J_history, p_history = algogradient_descent(x_train, y_train, w_final,
+                                                                                           a_final, b_final,
+                                                                                           tmp_alpha,
+                                                                                           5000, compute_cost,
+                                                                                           compute_gradient)
                 except:
                     error1 = True
                 print("Run x5000 pressed")
             if 860 < mouse_x < 1060 and 330 < mouse_y < 380:
                 try:
-                    w_final, b_final, J_history, p_history = algogradient_descent(x_train, y_train, w_init, b_init,
-                                                                                  tmp_alpha,
-                                                                                  25000, compute_cost, compute_gradient)
+                    w_final, a_final, b_final, J_history, p_history = algogradient_descent(x_train, y_train, w_final,
+                                                                                           a_final, b_final,
+                                                                                           tmp_alpha,
+                                                                                           25000, compute_cost,
+                                                                                           compute_gradient)
                 except:
                     error1 = True
                 print("Run x25000 pressed")
             if 860 < mouse_x < 1060 and 400 < mouse_y < 470:
                 try:
-                    w_final, b_final, J_history, p_history = algogradient_descent(x_train, y_train, w_init, b_init,
-                                                                                  tmp_alpha,
-                                                                                  100000, compute_cost,
-                                                                                  compute_gradient)
+                    w_final, a_final, b_final, J_history, p_history = algogradient_descent(x_train, y_train, w_final,
+                                                                                           a_final, b_final,
+                                                                                           tmp_alpha,
+                                                                                           100000, compute_cost,
+                                                                                           compute_gradient)
                 except:
                     error1 = True
                 print("Run x100000 pressed")
-
-            # pygame.draw.rect(screen, BLACK, (860, 260, 200, 50))
-            # pygame.draw.rect(screen, BLACK, (860, 330, 200, 50))
-            # pygame.draw.rect(screen, BLACK, (860, 400, 200, 50))
-
             if 55 < mouse_x < 845 and 55 < mouse_y < 545:
                 labels = []
                 point = [mouse_x - 55, mouse_y - 55]
